@@ -3,13 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Route Task</title></p>
+<title>Simple Routing using Route Task</title></p>
 <style>
   html, body {
     padding: 0;
     margin: 0;
   }
+
+  #paneDiv {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      padding: 12px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+    }
 </style>
+<link rel="stylesheet" href="http://jsdev.arcgis.com/4.0beta2/dijit/themes/tundra/tundra.css">
 <link rel="stylesheet" href="https://jsdev.arcgis.com/4.0beta2/esri/css/main.css">
 <script src="https://jsdev.arcgis.com/4.0beta2/"></script>
 <script>
@@ -22,14 +32,16 @@ require([
   "esri/tasks/support/RouteParameters",
   "esri/tasks/support/FeatureSet",
   "esri/symbols/SimpleMarkerSymbol",
-  "esri/symbols/SimpleLineSymbol",  
+  "esri/symbols/SimpleLineSymbol", 
+  "esri/Color", 
    "dojo/on", 
   "dojo/domReady!"
 ], function(
-  Map, MapView, Graphic,  GraphicsLayer, RouteTask, RouteParameters, FeatureSet, SimpleMarkerSymbol, SimpleLineSymbol, on){
+  Map, MapView, Graphic,  GraphicsLayer, RouteTask, RouteParameters, 
+  FeatureSet, SimpleMarkerSymbol, SimpleLineSymbol, Color, on){
   
-var map, routeTask, routeParams;
-        var stopSymbol, routeSymbol, lastStop;
+  var map, routeTask, routeParams, graphicsLayer;
+  var stopSymbol, routeSymbol, lastStop;
 
   var map = new Map({
     basemap: "streets"
@@ -41,36 +53,29 @@ var map, routeTask, routeParams;
             zoom : 14
   });
 
-graphicsLayer = new GraphicsLayer();
-        map.add(graphicsLayer);
-
-        routeParams = new RouteParameters();
-  routeParams.stops = new FeatureSet();
-  routeParams.outSpatialReference = {
-    "wkid" : 102100
-  };
-
-  stopSymbol = new SimpleMarkerSymbol();
-        stopSymbol.style = SimpleMarkerSymbol.STYLE_CROSS;
-        stopSymbol.size = 15;
-        //stopSymbol.outline.setWidth(4);
-        lineSymbol = new SimpleLineSymbol();
-        lineSymbol.Color = new dojo.Color([0, 0, 255, 0.5]);
-        lineSymbol.Width = 5;
-        routeSymbol = lineSymbol;
-
   view.then(function() {
+    on(view, "click", addStop);
+    routeTask = new RouteTask("http://route.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World"); 
 
+    graphicsLayer = new GraphicsLayer();
+    map.add(graphicsLayer);
 
-        
-        on(view, "click", addStop);
+    //setup the route parameters
+    routeParams = new RouteParameters();
+    routeParams.stops = new FeatureSet();
+    routeParams.outSpatialReference = {
+      "wkid" : 102100
+    };
 
-       routeTask = new RouteTask("http://route.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World");
-
-       on(routeTask, "solve-compelte", showRoute);
-       // routeTask.on("error", errorHandler);       
-
-        
+    //define the symbology used to display the route
+    stopSymbol = new SimpleMarkerSymbol();
+    stopSymbol.style = SimpleMarkerSymbol.STYLE_CROSS;
+    stopSymbol.size = 15;
+    stopSymbol.outline.width = 4;
+  
+    routeSymbol = new SimpleLineSymbol();
+    routeSymbol.color = new Color([0, 0, 255, 0.5]);
+    routeSymbol.width = 5;
   });
 
 
@@ -86,16 +91,19 @@ graphicsLayer = new GraphicsLayer();
     }
   }
 
+  //Adds the solved route to the map as a graphic
   function showRoute(evt) {
-          var routeResult = evt.routeResults[0].route;
-          routeResult.symbol = routeSymbol;
-          graphicsLayer.add(routeResult);
+    var routeResult = evt.routeResults[0].route;
+    routeResult.symbol = routeSymbol;
+    graphicsLayer.add(routeResult);
   }
 });
 </script>
 </head>
-<body>
-  <p>Click on the map to add stops to the route. The route from the last stop to the newly added stop is calculated. If a stop is not reachable, it is removed and the last valid point is set as the starting point.</p>
+<body class="tundra">
   <div id="viewDiv"></div>
+  <div id="paneDiv">
+    <div><p>Click on the map to add stops to the route. The route from the last stop to the newly added stop is calculated. If a stop is not reachable, it is removed and the last valid point is set as the starting point.</p></div>
+  </div>
 </body>
 </html>
